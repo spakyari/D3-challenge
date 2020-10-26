@@ -1,24 +1,33 @@
 function print(content) {
-    console.log(content)
+
 }
 
-d3.csv("./assets/data/data.csv").then(function (data) {
+d3.csv("./assets/data/data.csv").then(function (dataset) {
 
-    var poverty = data.map(row=>{return parseInt(row.poverty)});
-    var healthcare = data.map(row=>{return parseInt(row.healthcare)});
-    var age = data.map(row=>{return parseInt(row.age)});
-    var smokes = data.map(row=>{return parseInt(row.smokes)});
+
+
+DrawScatter(dataset, 'body', 'poverty', 'healthcare', ['In Poverty (%)', 'Lacks Healthcare(%)'])
+DrawScatter(dataset, 'body', 'age', 'smokes', ['Age', 'Smokes'])
+
+
+})
+
+function DrawScatter(data, onto, x , y, Axis_labels) {
+
+    var X = data.map(row=>{return parseFloat(row[x])});
+    var Y = data.map(row=>{return parseFloat(row[y])});
+
 
     // Define SVG area dimensions
     var svgWidth = 1200;
-    var svgHeight = 660;
+    var svgHeight = 1200;
 
     // Define the chart's margins as an object
     var chartMargin = {
     top: 30,
     right: 30,
-    bottom: 30,
-    left: 30
+    bottom: 50,
+    left: 50
     };
 
     // Define dimensions of the chart area
@@ -27,7 +36,7 @@ d3.csv("./assets/data/data.csv").then(function (data) {
 
 
     // Select body, append SVG area to it, and set the dimensions
-    var svg = d3.select("body")
+    var svg = d3.select(onto)
   .append("svg")
   .attr("height", svgHeight)
   .attr("width", svgWidth);
@@ -38,19 +47,15 @@ d3.csv("./assets/data/data.csv").then(function (data) {
 
   // Create a linear scale for the horizontal axis.
   var xLinearScale = d3.scaleLinear()
-    .domain(d3.extent(poverty))
-    .range([0, chartWidth]);
+    .domain([d3.min(X)*0.80, d3.max(X)*1.1])
+    .range([0, chartWidth])
+
 
     // Create a linear scale for the horizontal axis.  
 
     var yLinearScale = d3.scaleLinear()
-    .domain(d3.extent(healthcare))
-    .range([chartHeight, 0]);
-
-    print(`max poverty ${d3.max(poverty)}`)
-    print(`max healthcare ${d3.max(healthcare)}`)
-    print(poverty)
-    print(healthcare)
+    .domain([d3.min(Y)*0.80,d3.max(Y)*1.1])
+    .range([chartHeight, 0])
 
 
   // Create two new functions passing our scales in as arguments
@@ -61,22 +66,53 @@ d3.csv("./assets/data/data.csv").then(function (data) {
     // Append two SVG group elements to the chartGroup area,
   // and create the bottom and left axes inside of them
   chartGroup.append("g")
+  .attr("transform", `translate(${chartMargin.left}, 0)`)
     .call(leftAxis);
 
   chartGroup.append("g")
-    .attr("transform", `translate(0, ${chartHeight})`)
+    .attr("transform", `translate(${chartMargin.left}, ${chartHeight})`)
     .call(bottomAxis);
 
 //   Create one SVG rectangle per piece of tvData
 //   Use the linear and band scales to position each rectangle within the chart
+
+var radius = 15
+
   chartGroup.selectAll(".stateCircle")
   .data(data)
   .enter()
   .append("circle")
   .attr("class", "stateCircle")
-  .attr("cx", d => xLinearScale(parseInt(d.poverty)))
-  .attr("cy", d => yLinearScale(parseInt(d.healthcare)))
-  .attr("r", 20);
+  .attr("cx", d => xLinearScale(parseFloat(d[x])))
+  .attr("cy", d => yLinearScale(parseFloat(d[y])))
+  .attr("r", radius)
+  
+chartGroup.selectAll(".stateText")
+  .data(data)
+  .enter()
+  .append('text')
+  .attr("class", "stateText")
+  .attr("x", d => xLinearScale(parseFloat(d[x])))
+  .attr("y", d => yLinearScale(parseFloat(d[y]))+5)
+  .text(d => {return d.abbr})
 
+  chartGroup.append("text")
+    // Position the text
+    // Center the text:
+    // (https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/text-anchor)
+    .attr("transform", `translate(${chartWidth / 2}, ${chartHeight + chartMargin.bottom - 5})`)
+    .attr("text-anchor", "middle")
+    .attr("font-size", "16px")
+    .attr("fill", "black")
+    .text(Axis_labels[0]);
 
-})
+  chartGroup.append("text")
+  .attr("transform", "rotate(-90)")
+  .attr("y", 0 - chartMargin.left + 40)
+  .attr("x", 0 - (chartHeight / 2))
+  .attr("dy", "1em")
+  .text(Axis_labels[1]);
+
+  
+
+}
